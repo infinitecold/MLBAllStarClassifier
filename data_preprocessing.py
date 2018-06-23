@@ -19,6 +19,9 @@ logging.info('SUCCESSFULLY LOADED CSVS INTO DATAFRAMES')
 
 # congregate data into dictionary
 player_stats = {}
+positions_to_remove = ['P', 'C']
+eras = {'-1919': (0, 1919), '1920-1941': (1920, 1941), '1942-1945': (1942, 1945), '1946-1962': (1946, 1962),
+        '1963-1976': (1963, 1976), '1977-1992': (1977, 1992), '1993-2009': (1993, 2009), '2010-': (2010, 3000)}
 
 # 1. batting
 for _, row in batting_df.iterrows():
@@ -27,6 +30,7 @@ for _, row in batting_df.iterrows():
         player_stats[player_season] = {}
     for stat in ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF']:
         player_stats[player_season][stat] = row[stat]
+logging.info('SUCCESSFULLY ADDED BATTING STATS')
 
 # 2. fielding
 player_positions = {}
@@ -42,14 +46,15 @@ for _, row in fielding_df.iterrows():
         for stat in ['G', 'GS', 'InnOuts', 'PO', 'A', 'E', 'DP']:
             player_stats[player_season][stat + '_field'] += row[stat]
     player_positions[player_season][row['POS']] = row['G']
-logging.info('NUMBER OF PLAYER SEASONS: %d', len(player_stats))
+logging.info('SUCCESSFULLY ADDED FIELDING STATS')
 
+logging.info('NUMBER OF PLAYER SEASONS: %d', len(player_stats))
 for player_season in player_positions:  # remove players who played >90% games as pitchers or catchers
-    for position in ['P', 'C']:
+    for position in positions_to_remove:
         if position in player_positions[player_season] and player_positions[player_season][position] / sum(player_positions[player_season].values()) > 0.9:
             player_stats.pop(player_season, None)
-            logging.info('PLAYER %s (%s) REMOVED WITH >90%% %s POSITION', player_season[0], player_season[1], position)
-logging.info('NUMBER OF PLAYER SEASONS WITHOUT P\'S AND C\'S: %d', len(player_stats))
+            logging.debug('PLAYER %s (%s) REMOVED WITH >90%% %s POSITION', player_season[0], player_season[1], position)
+logging.info('NUMBER OF PLAYER SEASONS WITHOUT %s POSITIONS: %d', positions_to_remove, len(player_stats))
 
 # build stats_df
 stats_df = pd.DataFrame.from_dict(player_stats, orient='index')
@@ -60,26 +65,26 @@ stats_df.rename(columns={'level_0': 'playerID', 'level_1': 'yearID'}, inplace=Tr
 stats_df['n_awards'] = 0
 for _, row in awards_df.iterrows():
     stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] > row['yearID']), ['n_awards']] += 1
+logging.info('SUCCESSFULLY ADDED AWARDS STATS')
 
 # 4. eras (-1919, 1920-1941, 1942-1945, 1946-1962, 1963-1976, 1977-1992, 1993-2009, 2010-)
-for era in ['-1919', '1920-1941', '1942-1945', '1946-1962', '1963-1976', '1977-1992', '1993-2009', '2010-']:
-    stats_df[era] = 0
-
-stats_df.loc[stats_df['yearID'] < 1920, ['-1919']] = 1
-stats_df.loc[(stats_df['yearID'] >= 1920) & (stats_df['yearID'] <= 1941), ['1920-1941']] = 1
-stats_df.loc[(stats_df['yearID'] >= 1942) & (stats_df['yearID'] <= 1945), ['1942-1945']] = 1
-stats_df.loc[(stats_df['yearID'] >= 1946) & (stats_df['yearID'] <= 1962), ['1946-1962']] = 1
-stats_df.loc[(stats_df['yearID'] >= 1963) & (stats_df['yearID'] <= 1976), ['1963-1976']] = 1
-stats_df.loc[(stats_df['yearID'] >= 1977) & (stats_df['yearID'] <= 1992), ['1977-1992']] = 1
-stats_df.loc[(stats_df['yearID'] >= 1993) & (stats_df['yearID'] <= 2009), ['1993-2009']] = 1
-stats_df.loc[stats_df['yearID'] > 2009, ['2010-']] = 1
+for era_label in eras:
+    stats_df[era_label] = 0
+for label, era in eras.iteritems():
+    stats_df.loc[(stats_df['yearID'] >= era[0]) & (stats_df['yearID'] <= era[1]), [label]] = 1
+logging.info('SUCCESSFULLY ADDED ERA STATS')
 
 # 5. all-star appearances
 stats_df['all_star?'] = 0
 for _, row in allstar_df.iterrows():
     stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] == row['yearID']), ['all_star?']] = 1
+logging.info('SUCCESSFULLY ADDED ALL-STAR STATS')
 
 # fill missing data (NaN values) with 0s
 stats_df.fillna(0, inplace=True)
 
-logging.info('stats_df:\n%s', stats_df.head(40))
+print(stats_df.head(40))
+
+# save data to CSV
+stats_df.to_csv('data/preprocessed.csv', index=False)
+logging.info('SUCCESSFULLY WRITTEN stats_df TO CSV')
