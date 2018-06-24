@@ -13,7 +13,7 @@ pd.set_option('display.max_rows', 1000)
 pd.set_option('display.width', 500)
 
 # read in data from CSV
-stats_df = pd.read_csv('data/preprocessed.csv')
+stats_df = pd.read_csv('preprocessed/stats.csv')
 logging.info('SUCCESSFULLY LOADED CSV INTO DATAFRAME')
 
 # organize features (X) and labels (y)

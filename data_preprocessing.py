@@ -1,5 +1,7 @@
 import logging
 import pandas as pd
+import pickle
+from sklearn.model_selection import train_test_split
 
 # set options
 logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
@@ -10,11 +12,11 @@ pd.set_option('display.max_rows', 1000)
 pd.set_option('display.width', 500)
 
 # read in data from CSVs
-allstar_df = pd.read_csv('data/AllstarFull.csv', usecols=['playerID', 'yearID'])
-awards_df = pd.read_csv('data/AwardsPlayers.csv', usecols=['playerID', 'awardID', 'yearID'])
-batting_df = pd.read_csv('data/Batting.csv')
-fielding_df = pd.read_csv('data/Fielding.csv', usecols=['playerID', 'yearID', 'POS', 'G', 'GS', 'InnOuts', 'PO', 'A', 'E'])
-people_df = pd.read_csv('data/People.csv', usecols=['playerID', 'nameFirst', 'nameLast'])
+allstar_df = pd.read_csv('raw/AllstarFull.csv', usecols=['playerID', 'yearID'])
+awards_df = pd.read_csv('raw/AwardsPlayers.csv', usecols=['playerID', 'awardID', 'yearID'])
+batting_df = pd.read_csv('raw/Batting.csv')
+fielding_df = pd.read_csv('raw/Fielding.csv', usecols=['playerID', 'yearID', 'POS', 'G', 'GS', 'InnOuts', 'PO', 'A', 'E'])
+people_df = pd.read_csv('raw/People.csv', usecols=['playerID', 'nameFirst', 'nameLast'])
 logging.info('SUCCESSFULLY LOADED CSVS INTO DATAFRAMES')
 
 # parameters
@@ -25,7 +27,7 @@ positions_to_remove = ['P', 'C']
 eras = {'-1919': (0, 1919), '1920-1941': (1920, 1941), '1942-1945': (1942, 1945), '1946-1962': (1946, 1962),
         '1963-1976': (1963, 1976), '1977-1992': (1977, 1992), '1993-2009': (1993, 2009), '2010-': (2010, 3000)}
 
-# PART I - LOADING STATS FROM DATA
+# PROCESSING STATS FROM DATA
 # 1. batting
 for _, row in batting_df.iterrows():
     player_season = (row['playerID'], row['yearID'])
@@ -86,11 +88,11 @@ for _, row in allstar_df.iterrows():
     stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] == row['yearID']), ['all_star?']] = 1
 logging.info('SUCCESSFULLY ADDED ALL-STAR STATS')
 
-# PART II - ADDING STATS WITH EXISTING DATA
+# ADDING STATS USING EXISTING DATA
 stats_df['AVG'] = stats_df['H'] / stats_df['AB']  # batting average
 
 PA_no_SH = stats_df['AB'] + stats_df['BB'] + stats_df['HBP'] + stats_df['SF']  # plate appearances without SH
-stats_df['OBP'] = (stats_df['H'] + stats_df['BB'] + stats_df['HBP']) / PA_no_SH  # on base percentage
+stats_df['OBP'] = (stats_df['H'] + stats_df['BB'] + stats_df['HBP']) / PA_no_SH  # on-base percentage
 
 singles = stats_df['H'] - stats_df['2B'] - stats_df['3B'] - stats_df['HR']
 stats_df['slugging'] = (stats_df['HR'] * 4 + stats_df['3B'] * 3 + stats_df['2B'] * 2 + singles) / stats_df['AB']
@@ -109,6 +111,19 @@ stats_df = stats_df[['playerID', 'yearID', 'G', 'AB', 'R', 'H', '2B', '3B', 'HR'
 # log first 50 rows
 logging.debug(stats_df.head(50))
 
-# save data to CSV
-stats_df.to_csv('data/preprocessed.csv', index=False)
-logging.info('SUCCESSFULLY WRITTEN stats_df TO CSV')
+# SAVING DATA TO CSVS AND PICKLES
+stats_df.to_csv('preprocessed/stats.csv', index=False)
+logging.info('SUCCESSFULLY WRITTEN DATAFRAME stats_df TO CSV preprocessed/stats.csv')
+
+# organize features (X) and labels (y)
+X = stats_df.drop(['playerID', 'yearID', 'all_star?'], axis=1)
+y = stats_df['all_star?']
+
+# cross-validation
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+with open('preprocessed/stats_train.pickle', 'wb') as f_train, open('preprocessed/stats_test.pickle', 'wb') as f_test:
+    pickle.dump((X_train.values, y_train.values), f_train)
+    logging.info('SUCCESSFULLY DUMPED (X_train, y_train) TO PICKLE preprocessed/stats_train.pickle')
+    pickle.dump((X_test.values, y_test.values), f_test)
+    logging.info('SUCCESSFULLY DUMPED (X_test, y_test) TO PICKLE preprocessed/stats_test.pickle')
