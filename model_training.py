@@ -1,11 +1,14 @@
 import logging
 import numpy as np
 import pandas as pd
-from sklearn.model_selection import cross_val_predict, KFold
-from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.model_selection import train_test_split
 
 # set options
 logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
+
+np.set_printoptions(threshold=np.nan)
 
 pd.set_option('display.column_space', 100)
 pd.set_option('display.max_columns', 100)
@@ -17,31 +20,34 @@ stats_df = pd.read_csv('preprocessed/stats.csv')
 logging.info('SUCCESSFULLY LOADED CSV INTO DATAFRAME')
 
 # organize features (X) and labels (y)
-features = stats_df.drop(['playerID', 'yearID', 'all_star?'], axis=1)
-labels = stats_df['all_star?']
+X = stats_df.drop(['playerID', 'yearID', 'all_star?'], axis=1)
+y = stats_df['all_star?']
 
-# set up logistic regression model
-lr = LogisticRegression(class_weight='balanced')
-kf = KFold(features.shape[0], random_state=1)
+# cross-validation
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1)
+logging.info('SUCCESSFULLY PREPARED TRAINING AND TESTING SETS')
 
-predictions_lr = cross_val_predict(lr, features, labels, cv=kf, verbose=2)
-logging.info('SUCCESSFULLY CROSS VALIDATED AND MADE PREDICTIONS ON TEST DATA')
+# set up model
+clf = RandomForestClassifier(random_state=1, n_estimators=12, max_depth=11, min_samples_leaf=1, class_weight={0: 1, 1: 3})
+# clf = MLPClassifier(hidden_layer_sizes=(800, 400, 100))
 
-np_predictions_lr = np.asarray(predictions_lr)
-np_labels = labels.as_matrix()
+# train model
+clf.fit(X_train, y_train)
 
-print(np_predictions_lr)
-print(np_labels)
+# test model
+predictions = clf.predict(X_test)
+np_predictions = np.asarray(predictions)
+np_labels = y_test
 
 # statistical analysis
-true_positives = np_predictions_lr[(np_predictions_lr == 1) & (np_labels == 1)]
-true_negatives = np_predictions_lr[(np_predictions_lr == 0) & (np_labels == 0)]
-false_positives = np_predictions_lr[(np_predictions_lr == 1) & (np_labels == 0)]
-false_negatives = np_predictions_lr[(np_predictions_lr == 0) & (np_labels == 1)]
+true_positives = np_predictions[(np_predictions == 1) & (np_labels == 1)]
+true_negatives = np_predictions[(np_predictions == 0) & (np_labels == 0)]
+false_positives = np_predictions[(np_predictions == 1) & (np_labels == 0)]
+false_negatives = np_predictions[(np_predictions == 0) & (np_labels == 1)]
 
-precision = len(true_positives) / (len(true_positives) + len(false_positives))
-logging.info('PRECISION: %f', precision)
-recall = len(true_positives) / (len(true_positives) + len(false_negatives))
-logging.info('RECALL: %f', recall)
-f1_score = 2 * precision * recall / (precision + recall)
-logging.info('F1 SCORE: %f', f1_score)
+precision = precision_score(np_labels, np_predictions)
+logging.info('PRECISION: %.3f', precision)
+recall = recall_score(np_labels, np_predictions)
+logging.info('RECALL: %.3f', recall)
+f1 = f1_score(np_labels, np_predictions)
+logging.info('F1 SCORE: %.3f', f1)

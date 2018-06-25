@@ -1,7 +1,6 @@
 import logging
 import pandas as pd
 import pickle
-from sklearn.model_selection import train_test_split
 
 # set options
 logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
@@ -114,16 +113,3 @@ logging.debug(stats_df.head(50))
 # SAVING DATA TO CSVS AND PICKLES
 stats_df.to_csv('preprocessed/stats.csv', index=False)
 logging.info('SUCCESSFULLY WRITTEN DATAFRAME stats_df TO CSV preprocessed/stats.csv')
-
-# organize features (X) and labels (y)
-X = stats_df.drop(['playerID', 'yearID', 'all_star?'], axis=1)
-y = stats_df['all_star?']
-
-# cross-validation
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
-with open('preprocessed/stats_train.pickle', 'wb') as f_train, open('preprocessed/stats_test.pickle', 'wb') as f_test:
-    pickle.dump((X_train.values, y_train.values), f_train)
-    logging.info('SUCCESSFULLY DUMPED (X_train, y_train) TO PICKLE preprocessed/stats_train.pickle')
-    pickle.dump((X_test.values, y_test.values), f_test)
-    logging.info('SUCCESSFULLY DUMPED (X_test, y_test) TO PICKLE preprocessed/stats_test.pickle')
