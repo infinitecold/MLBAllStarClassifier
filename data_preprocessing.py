@@ -1,14 +1,21 @@
 import logging
 import pandas as pd
-import pickle
 
-# set options
+# package options
 logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
 
 pd.set_option('display.column_space', 100)
 pd.set_option('display.max_columns', 100)
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.width', 500)
+
+# parameters
+player_stats = {}
+batting_stats = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF']
+fielding_stats = ['G', 'GS', 'InnOuts', 'PO', 'A', 'E']
+positions_to_remove = ['P', 'C']
+eras = {'1933-1941': (1933, 1941), '1942-1945': (1942, 1945), '1946-1962': (1946, 1962), '1963-1976': (1963, 1976),
+        '1977-1992': (1977, 1992), '1993-2009': (1993, 2009), '2010-': (2010, 3000)}
 
 # read in data from CSVs
 allstar_df = pd.read_csv('raw/AllstarFull.csv', usecols=['playerID', 'yearID'])
@@ -17,14 +24,6 @@ batting_df = pd.read_csv('raw/Batting.csv')
 fielding_df = pd.read_csv('raw/Fielding.csv', usecols=['playerID', 'yearID', 'POS', 'G', 'GS', 'InnOuts', 'PO', 'A', 'E'])
 people_df = pd.read_csv('raw/People.csv', usecols=['playerID', 'nameFirst', 'nameLast'])
 logging.info('SUCCESSFULLY LOADED CSVS INTO DATAFRAMES')
-
-# parameters
-player_stats = {}
-batting_stats = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF']
-fielding_stats = ['G', 'GS', 'InnOuts', 'PO', 'A', 'E']
-positions_to_remove = ['P', 'C']
-eras = {'-1919': (0, 1919), '1920-1941': (1920, 1941), '1942-1945': (1942, 1945), '1946-1962': (1946, 1962),
-        '1963-1976': (1963, 1976), '1977-1992': (1977, 1992), '1993-2009': (1993, 2009), '2010-': (2010, 3000)}
 
 # PROCESSING STATS FROM DATA
 # 1. batting
@@ -74,7 +73,11 @@ for _, row in awards_df.iterrows():
     stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] > row['yearID']), ['n_awards']] += 1
 logging.info('SUCCESSFULLY ADDED AWARDS STATS')
 
-# 4. eras (-1919, 1920-1941, 1942-1945, 1946-1962, 1963-1976, 1977-1992, 1993-2009, 2010-)
+# drop players before 1933 (first all-star game in 1933)
+stats_df = stats_df[stats_df['yearID'] >= 1933]
+logging.info('NUMBER OF PLAYER SEASONS PAST 1933 (INCLUSIVE): %d', len(stats_df))
+
+# 4. eras (1933-1941, 1942-1945, 1946-1962, 1963-1976, 1977-1992, 1993-2009, 2010-)
 for era_label in eras:
     stats_df[era_label] = 0
 for label, era in eras.iteritems():
@@ -102,14 +105,14 @@ stats_df['OPS'] = stats_df['OBP'] + stats_df['slugging']
 stats_df.fillna(0, inplace=True)
 
 # re-order columns
-stats_df = stats_df[['playerID', 'yearID', 'G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'BB', 'SO', 'IBB', 'HBP',
-                     'SH', 'SF', 'AVG', 'OBP', 'slugging', 'OPS', 'G_field', 'GS_field', 'InnOuts_field', 'PO_field',
-                     'A_field', 'E_field', 'n_awards', '-1919', '1920-1941', '1942-1945', '1946-1962', '1963-1976',
+stats_df = stats_df[['playerID', 'yearID', 'G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'BB', 'SO', 'IBB',
+                     'HBP', 'SH', 'SF', 'AVG', 'OBP', 'slugging', 'OPS', 'G_field', 'GS_field', 'InnOuts_field',
+                     'PO_field', 'A_field', 'E_field', 'n_awards', '1933-1941', '1942-1945', '1946-1962', '1963-1976',
                      '1977-1992', '1993-2009', '2010-', 'all_star?']]
 
 # log first 50 rows
 logging.debug(stats_df.head(50))
 
-# SAVING DATA TO CSVS AND PICKLES
+# save data to CSV
 stats_df.to_csv('preprocessed/stats.csv', index=False)
-logging.info('SUCCESSFULLY WRITTEN DATAFRAME stats_df TO CSV preprocessed/stats.csv')
+logging.info('SUCCESSFULLY WRITTEN DATAFRAME stats_df TO preprocessed/stats.csv')
