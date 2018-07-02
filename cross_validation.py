@@ -3,6 +3,7 @@ import pandas as pd
 import pickle
 from sklearn.model_selection import train_test_split
 
+# package options
 logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
 
 # read in data from CSV
