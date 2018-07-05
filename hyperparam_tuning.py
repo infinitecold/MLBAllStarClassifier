@@ -1,27 +1,39 @@
 import logging
+import pandas as pd
 import pickle
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import RandomizedSearchCV
+from sklearn.metrics import f1_score
+from sklearn.model_selection import ParameterGrid
 
 # package options
 logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
 
 # read in data from pickle
-with open('preprocessed/stats_train_test.pickle', 'rb') as f:
+with open('data/preproc/stats_train_test.pickle', 'rb') as f:
     [X_train, X_test, y_train, y_test] = pickle.load(f)
+
+# copy all-star data in training set
+copies = 5
+train = pd.concat([X_train, y_train], axis=1)
+train = train.append([train[train['all_star?'] == 1]] * copies, ignore_index=True)
+X_train = train.drop(['all_star?'], axis=1)
+y_train = train['all_star?']
 
 # set up model
 clf = RandomForestClassifier()
 
-# search through grid for best parameters
-grid = {'n_estimators': [10, 20, 50, 100, 200],
-        'max_features': ['auto', 'log2'],
-        'max_depth': [20, 50, 100, 200],
-        'min_samples_split': [2, 5, 10, 20],
-        'min_samples_leaf': [1, 2, 5, 10, 20],
-        'bootstrap': [True, False]}
-clf_search = RandomizedSearchCV(clf, grid, n_iter=25, scoring='f1', cv=5, random_state=1, n_jobs=-1)
+# manual grid search to avoid K-Fold cross-validation in sklearn.model_selection.GridSearchCV
+grid = ParameterGrid({'n_estimators': [400],
+                      'max_features': [0.2],
+                      'max_depth': [120],
+                      'min_samples_split': [15],  # larger -> weaker model
+                      'min_samples_leaf': [2]})  # larger -> weaker model
 
-clf_search.fit(X_train, y_train)
-
-logging.info('BEST PARAMETERS FOR RANDOM FOREST CLASSIFIER: %s', clf_search.best_params_)
+for param in grid:
+    clf.set_params(**param)
+    clf.fit(X_train, y_train)
+    train_predictions = clf.predict(X_train)
+    train_f1 = f1_score(y_train, train_predictions)
+    test_predictions = clf.predict(X_test)
+    test_f1 = f1_score(y_test, test_predictions)
+    logging.info('F1 SCORES: train %f test %f WITH PARAMETERS %s', train_f1, test_f1, param)

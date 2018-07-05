@@ -7,8 +7,8 @@ from sklearn.model_selection import train_test_split
 logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
 
 # read in data from CSV
-stats_df = pd.read_csv('preprocessed/stats.csv')
-logging.info('SUCCESSFULLY LOADED CSV INTO DATAFRAME')
+stats_df = pd.read_csv('data/preproc/stats.csv')
+logging.info('SUCCESSFULLY LOADED CSV(\'s) INTO DATAFRAME(\'s)')
 
 # organize features (X) and labels (y)
 X = stats_df.drop(['playerID', 'yearID', 'all_star?'], axis=1)
@@ -19,6 +19,6 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_
 logging.info('SUCCESSFULLY PREPARED TRAINING AND TESTING SETS')
 
 # save data to pickle
-with open('preprocessed/stats_train_test.pickle', 'wb') as f:
+with open('data/preproc/stats_cv.pickle', 'wb') as f:
     pickle.dump([X_train, X_test, y_train, y_test], f)
-logging.info('SUCCESSFULLY WRITTEN TRAINING AND TESTING SETS TO preprocessed/stats_train_test.pickle')
+logging.info('SUCCESSFULLY WRITTEN TRAINING AND TESTING SETS TO data/preproc/stats_cv.pickle')

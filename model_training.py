@@ -16,7 +16,7 @@ pd.set_option('display.max_rows', 1000)
 pd.set_option('display.width', 500)
 
 # read in data from pickle
-with open('preprocessed/stats_train_test.pickle', 'rb') as f:
+with open('data/preproc/stats_train_test.pickle', 'rb') as f:
     [X_train, X_test, y_train, y_test] = pickle.load(f)
 
 # copy all-star data in training set
@@ -31,7 +31,7 @@ y_train = train['all_star?']
 # X_test.drop(['GS_field'], axis=1, inplace=True)
 
 # train model
-clf = RandomForestClassifier(n_estimators=100, max_features=None, max_depth=100, min_samples_split=20,
+clf = RandomForestClassifier(n_estimators=400, max_features=0.2, max_depth=200, min_samples_split=15,
                              min_samples_leaf=2, random_state=1)
 clf.fit(X_train, y_train)
 
@@ -50,7 +50,7 @@ test_recall = recall_score(y_test, np_test_predictions)
 test_f1 = f1_score(y_test, np_test_predictions)
 
 # test model on test data with adjustable threshold
-probability_threshold = 0.63
+probability_threshold = 0.37
 probabilities = clf.predict_proba(X_test)
 probabilities_results = np.append(probabilities, y_test.values.reshape(len(y_test), 1), axis=1)
 true_positives = true_negatives = false_positives = false_negatives = 0.0

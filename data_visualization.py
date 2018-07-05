@@ -6,10 +6,10 @@ x_stat = 'H'
 x_stat_name = 'Hits'
 y_stat = 'AVG'
 y_stat_name = 'Batting Average'
-games_threshold = 20
+games_threshold = 100
 
 # read in data from CSV
-stats_df = pd.read_csv('preprocessed/stats.csv')
+stats_df = pd.read_csv('data/preproc/stats.csv')
 
 pd.set_option('display.column_space', 100)
 pd.set_option('display.max_columns', 100)
