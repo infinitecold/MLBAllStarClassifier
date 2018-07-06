@@ -13,14 +13,34 @@ pd.set_option('display.width', 500)
 column_keys = ['playerID', 'yearID']
 batting_stats = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF', 'GIDP']
 fielding_stats = ['G', 'GS', 'InnOuts', 'PO', 'A', 'E', 'DP']
+
 position_columns = ['G_p', 'G_c', 'G_1b', 'G_2b', 'G_3b', 'G_ss', 'G_lf', 'G_cf', 'G_rf', 'G_dh']
+
 positions_to_remove = ['P']
+
+first_allstar_year = 1933
+current_year = 2018
 eras = {'1933-1941': (1933, 1941), '1942-1945': (1942, 1945), '1946-1962': (1946, 1962), '1963-1976': (1963, 1976),
-        '1977-1992': (1977, 1992), '1993-2009': (1993, 2009), '2010-': (2010, 2100)}
+        '1977-1992': (1977, 1992), '1993-2009': (1993, 2009), '2010-': (2010, current_year)}
+
+games_threshold = 100
+diff_percentage = 0.1
+pos_stats_to_diff = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'BB', 'IBB', 'HBP', 'SH', 'SF', 'AVG', 'OBP',
+                     'slugging', 'OPS', 'G_field', 'GS_field', 'InnOuts_field', 'PO_field', 'A_field', 'DP_field',
+                     'n_awards']  # the higher the stat the better
+neg_stats_to_diff = ['CS', 'SO', 'GIDP', 'E_field']  # the lower the stat the better
+
+all_stats_ordered = ['playerID', 'yearID', 'POS', 'G', 'G_diff', 'AB', 'AB_diff', 'R', 'R_diff', 'H', 'H_diff', '2B',
+                     '2B_diff', '3B', '3B_diff', 'HR', 'HR_diff', 'RBI', 'RBI_diff', 'SB', 'SB_diff', 'CS', 'CS_diff',
+                     'BB', 'BB_diff', 'SO', 'SO_diff', 'IBB', 'IBB_diff', 'HBP', 'HBP_diff', 'SH', 'SH_diff', 'SF',
+                     'SF_diff', 'GIDP', 'GIDP_diff', 'AVG', 'AVG_diff', 'OBP', 'OBP_diff', 'slugging', 'slugging_diff',
+                     'OPS', 'OPS_diff', 'G_field', 'G_field_diff', 'GS_field', 'GS_field_diff', 'InnOuts_field',
+                     'InnOuts_field_diff', 'PO_field', 'PO_field_diff', 'A_field', 'A_field_diff', 'E_field',
+                     'E_field_diff', 'DP_field', 'DP_field_diff', 'n_awards', 'n_awards_diff', 'all_star?']
 
 # read in data from CSVs
-batting_df = pd.read_csv('data/raw/Batting.csv', usecols=column_keys+batting_stats)
-fielding_df = pd.read_csv('data/raw/Fielding.csv', usecols=column_keys+fielding_stats)
+batting_df = pd.read_csv('data/raw/Batting.csv', usecols=column_keys + batting_stats)
+fielding_df = pd.read_csv('data/raw/Fielding.csv', usecols=column_keys + fielding_stats)
 appearances_df = pd.read_csv('data/raw/Appearances.csv')
 awards_df = pd.read_csv('data/raw/AwardsPlayers.csv', usecols=['playerID', 'awardID', 'yearID'])
 allstar_df = pd.read_csv('data/raw/AllstarFull.csv', usecols=['playerID', 'yearID'])
@@ -66,9 +86,9 @@ logging.info('TOTAL PLAYER SEASONS FROM DATA: %d', len(stats_df))
 stats_df = stats_df[~stats_df['POS'].isin(positions_to_remove)]
 logging.info('TOTAL PLAYER SEASONS WITHOUT %s POSITIONS: %d', positions_to_remove, len(stats_df))
 
-# drop players before 1933 (first all-star game in 1933)
-stats_df = stats_df[stats_df['yearID'] >= 1933]
-logging.info('TOTAL PLAYER SEASONS 1933 OR LATER: %d', len(stats_df))
+# drop players before all-star game was inaugurated
+stats_df = stats_df[stats_df['yearID'] >= first_allstar_year]
+logging.info('TOTAL PLAYER SEASONS %d OR LATER: %d', first_allstar_year, len(stats_df))
 
 # 4. number of awards (at the time of the season)
 stats_df['n_awards'] = 0
@@ -76,29 +96,11 @@ for _, row in awards_df.iterrows():
     stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] > row['yearID']), ['n_awards']] += 1
 logging.info('SUCCESSFULLY ADDED AWARDS STATS (ALL)')
 
-# 5. eras
-for era_label in eras:
-    stats_df[era_label] = 0
-for label, era in eras.iteritems():
-    stats_df.loc[(stats_df['yearID'] >= era[0]) & (stats_df['yearID'] <= era[1]), [label]] = 1
-logging.info('SUCCESSFULLY ADDED ERA STATS (ALL)')
-
-# 6. all-star appearances
+# 5. all-star appearances
 stats_df['all_star?'] = 0
 for _, row in allstar_df.iterrows():
     stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] == row['yearID']), ['all_star?']] = 1
 logging.info('SUCCESSFULLY ADDED ALL-STAR STATS (%s)', len(allstar_df))
-
-# FILLING MISSING DATA
-columns_missing_data = stats_df.columns[stats_df.isnull().any()].tolist()
-logging.info('COLUMNS IN stats_df MISSING DATA: %s', columns_missing_data)
-
-for column in columns_missing_data:
-    allstar_avg = stats_df[stats_df['all_star?'] == 1][column].mean()
-    stats_df.loc[(stats_df[column].isnull()) & (stats_df['all_star?'] == 1), [column]] = allstar_avg
-    non_allstar_avg = stats_df[stats_df['all_star?'] == 0][column].mean()
-    stats_df.loc[(stats_df[column].isnull()) & (stats_df['all_star?'] == 0), [column]] = non_allstar_avg
-    logging.info('COLUMN %s AVERAGES: ALL-STAR %f NON-ALL-STAR %f', column, allstar_avg, non_allstar_avg)
 
 # ADDING STATS USING EXISTING DATA
 # i. batting average
@@ -113,16 +115,31 @@ singles = stats_df['H'] - stats_df['2B'] - stats_df['3B'] - stats_df['HR']
 stats_df['slugging'] = (stats_df['HR'] * 4 + stats_df['3B'] * 3 + stats_df['2B'] * 2 + singles) / stats_df['AB']
 
 # replace NaN values (players with 0 AB's) with 0's
-stats_df.fillna(0, inplace=True)
+stats_df[['AVG', 'OBP', 'slugging']] = stats_df[['AVG', 'OBP', 'slugging']].fillna(0)
 
 # iv. on-base plus slugging
 stats_df['OPS'] = stats_df['OBP'] + stats_df['slugging']
 
+# v. differential from average of top X% (for each stat)
+diff_avgs = {}
+for year in range(first_allstar_year, current_year):  # set up dictionary of all top X% averages by year
+    diff_avgs[year] = {}
+    considered = stats_df[(stats_df['yearID'] == year) & (stats_df['G'] >= games_threshold)]
+    for stat in pos_stats_to_diff:
+        top_avg = considered[stat].nlargest(int(considered[stat].size * diff_percentage)).mean()
+        diff_avgs[year][stat] = top_avg
+    for stat in neg_stats_to_diff:
+        bottom_avg = considered[stat].nsmallest(int(considered[stat].size * diff_percentage)).mean()
+        diff_avgs[year][stat] = bottom_avg
+    logging.debug('%d TOP %d%% AVERAGES: %s', year, int(diff_percentage * 100), diff_avgs[year])
+
+for stat in pos_stats_to_diff + neg_stats_to_diff:
+    stats_df[stat + '_diff'] = stats_df.apply(lambda row: row[stat] - diff_avgs[row['yearID']][stat], axis=1)
+
+logging.info('SUCCESSFULLY ADDED DIFFERENTIAL STATS')
+
 # re-order columns
-stats_df = stats_df[['playerID', 'yearID', 'POS', 'G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO',
-                     'IBB', 'HBP', 'SH', 'SF', 'GIDP', 'AVG', 'OBP', 'slugging', 'OPS', 'G_field', 'GS_field',
-                     'InnOuts_field', 'PO_field', 'A_field', 'E_field', 'DP_field', 'n_awards', '1933-1941',
-                     '1942-1945', '1946-1962', '1963-1976', '1977-1992', '1993-2009', '2010-', 'all_star?']]
+stats_df = stats_df[all_stats_ordered]
 
 # save data to CSV
 stats_df.to_csv('data/preproc/stats.csv', index=False)
