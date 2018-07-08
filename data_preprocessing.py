@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 
 # package options
-logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.DEBUG)
 
 pd.set_option('display.column_space', 100)
 pd.set_option('display.max_columns', 100)
@@ -23,12 +23,12 @@ current_year = 2018
 eras = {'1933-1941': (1933, 1941), '1942-1945': (1942, 1945), '1946-1962': (1946, 1962), '1963-1976': (1963, 1976),
         '1977-1992': (1977, 1992), '1993-2009': (1993, 2009), '2010-': (2010, current_year)}
 
-games_threshold = 100
-diff_percentage = 0.1
+games_threshold = 100  # number of games a player must play in order to be considered a top player
+top_players_threshold = 100  # number of top players to take average for each stat
 pos_stats_to_diff = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'BB', 'IBB', 'HBP', 'SH', 'SF', 'AVG', 'OBP',
                      'slugging', 'OPS', 'G_field', 'GS_field', 'InnOuts_field', 'PO_field', 'A_field', 'DP_field',
-                     'n_awards']  # the higher the stat the better
-neg_stats_to_diff = ['CS', 'SO', 'GIDP', 'E_field']  # the lower the stat the better
+                     'n_awards']  # for these stats, the higher the stat the better
+neg_stats_to_diff = ['CS', 'SO', 'GIDP', 'E_field']  # for these stats, the lower the stat the better
 
 all_stats_ordered = ['playerID', 'yearID', 'POS', 'G', 'G_diff', 'AB', 'AB_diff', 'R', 'R_diff', 'H', 'H_diff', '2B',
                      '2B_diff', '3B', '3B_diff', 'HR', 'HR_diff', 'RBI', 'RBI_diff', 'SB', 'SB_diff', 'CS', 'CS_diff',
@@ -120,22 +120,21 @@ stats_df[['AVG', 'OBP', 'slugging']] = stats_df[['AVG', 'OBP', 'slugging']].fill
 # iv. on-base plus slugging
 stats_df['OPS'] = stats_df['OBP'] + stats_df['slugging']
 
-# v. differential from average of top X% (for each stat)
+# v. differential from average of top players (for each stat)
 diff_avgs = {}
-for year in range(first_allstar_year, current_year):  # set up dictionary of all top X% averages by year
+for year in range(first_allstar_year, current_year):  # set up dictionary of averages of all top players by year
     diff_avgs[year] = {}
     considered = stats_df[(stats_df['yearID'] == year) & (stats_df['G'] >= games_threshold)]
     for stat in pos_stats_to_diff:
-        top_avg = considered[stat].nlargest(int(considered[stat].size * diff_percentage)).mean()
+        top_avg = considered[stat].nlargest(top_players_threshold).mean()
         diff_avgs[year][stat] = top_avg
     for stat in neg_stats_to_diff:
-        bottom_avg = considered[stat].nsmallest(int(considered[stat].size * diff_percentage)).mean()
+        bottom_avg = considered[stat].nsmallest(top_players_threshold).mean()
         diff_avgs[year][stat] = bottom_avg
-    logging.debug('%d TOP %d%% AVERAGES: %s', year, int(diff_percentage * 100), diff_avgs[year])
+    logging.debug('%d TOP %d PLAYER AVERAGES: %s', year, top_players_threshold, diff_avgs[year])
 
 for stat in pos_stats_to_diff + neg_stats_to_diff:
     stats_df[stat + '_diff'] = stats_df.apply(lambda row: row[stat] - diff_avgs[row['yearID']][stat], axis=1)
-
 logging.info('SUCCESSFULLY ADDED DIFFERENTIAL STATS')
 
 # re-order columns
