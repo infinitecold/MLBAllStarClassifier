@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 
 # package options
-logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.DEBUG)
+logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
 
 pd.set_option('display.column_space', 100)
 pd.set_option('display.max_columns', 100)
@@ -14,9 +14,11 @@ column_keys = ['playerID', 'yearID']
 batting_stats = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF', 'GIDP']
 fielding_stats = ['G', 'GS', 'InnOuts', 'PO', 'A', 'E', 'DP']
 
-position_columns = ['G_p', 'G_c', 'G_1b', 'G_2b', 'G_3b', 'G_ss', 'G_lf', 'G_cf', 'G_rf', 'G_dh']
+position_columns = ['G_p', 'G_c', 'G_1b', 'G_2b', 'G_3b', 'G_ss', 'G_lf', 'G_cf', 'G_rf', 'G_dh']  # of Appearances.csv
 
 positions_to_remove = ['P']
+
+leagues = ['AL', 'NL']
 
 first_allstar_year = 1933
 current_year = 2018
@@ -30,13 +32,14 @@ pos_stats_to_diff = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'BB', '
                      'n_awards']  # for these stats, the higher the stat the better
 neg_stats_to_diff = ['CS', 'SO', 'GIDP', 'E_field']  # for these stats, the lower the stat the better
 
-all_stats_ordered = ['playerID', 'yearID', 'POS', 'G', 'G_diff', 'AB', 'AB_diff', 'R', 'R_diff', 'H', 'H_diff', '2B',
-                     '2B_diff', '3B', '3B_diff', 'HR', 'HR_diff', 'RBI', 'RBI_diff', 'SB', 'SB_diff', 'CS', 'CS_diff',
-                     'BB', 'BB_diff', 'SO', 'SO_diff', 'IBB', 'IBB_diff', 'HBP', 'HBP_diff', 'SH', 'SH_diff', 'SF',
-                     'SF_diff', 'GIDP', 'GIDP_diff', 'AVG', 'AVG_diff', 'OBP', 'OBP_diff', 'slugging', 'slugging_diff',
-                     'OPS', 'OPS_diff', 'G_field', 'G_field_diff', 'GS_field', 'GS_field_diff', 'InnOuts_field',
-                     'InnOuts_field_diff', 'PO_field', 'PO_field_diff', 'A_field', 'A_field_diff', 'E_field',
-                     'E_field_diff', 'DP_field', 'DP_field_diff', 'n_awards', 'n_awards_diff', 'all_star?']
+all_stats_ordered = ['playerID', 'yearID', 'lgID', 'POS', 'G', 'G_diff', 'AB', 'AB_diff', 'R', 'R_diff', 'H',
+                     'H_diff', '2B', '2B_diff', '3B', '3B_diff', 'HR', 'HR_diff', 'RBI', 'RBI_diff', 'SB', 'SB_diff',
+                     'CS', 'CS_diff', 'BB', 'BB_diff', 'SO', 'SO_diff', 'IBB', 'IBB_diff', 'HBP', 'HBP_diff', 'SH',
+                     'SH_diff', 'SF', 'SF_diff', 'GIDP', 'GIDP_diff', 'AVG', 'AVG_diff', 'OBP', 'OBP_diff',
+                     'slugging', 'slugging_diff', 'OPS', 'OPS_diff', 'G_field', 'G_field_diff', 'GS_field',
+                     'GS_field_diff', 'InnOuts_field', 'InnOuts_field_diff', 'PO_field', 'PO_field_diff', 'A_field',
+                     'A_field_diff', 'E_field', 'E_field_diff', 'DP_field', 'DP_field_diff', 'n_awards',
+                     'n_awards_diff', 'all_star?']
 
 # read in data from CSVs
 batting_df = pd.read_csv('data/raw/Batting.csv', usecols=column_keys + batting_stats)
@@ -61,7 +64,7 @@ stats_df = pd.merge(stats_df, fielding_df, how='outer', on=column_keys)
 logging.info('SUCCESSFULLY ADDED FIELDING STATS (%d)', len(fielding_df))
 
 # 3. appearances - used to choose POS
-appearances_df = appearances_df.groupby(column_keys, as_index=False).sum()
+POS_df = appearances_df.groupby(column_keys, as_index=False).sum()
 
 def choose_position(row):
     row = pd.to_numeric(row, errors='coerce')
@@ -75,10 +78,10 @@ def choose_position(row):
             best_position = best_position_label[2:].upper()
     return best_position
 
-appearances_df['POS'] = appearances_df.apply(choose_position, axis=1)
-appearances_df = appearances_df[column_keys + ['POS']]
-stats_df = pd.merge(stats_df, appearances_df, how='outer', on=column_keys)
-logging.info('SUCCESSFULLY ADDED POSITION (POS) STAT (%d)', len(appearances_df))
+POS_df['POS'] = POS_df.apply(choose_position, axis=1)
+POS_df = POS_df[column_keys + ['POS']]
+stats_df = pd.merge(stats_df, POS_df, how='outer', on=column_keys)
+logging.info('SUCCESSFULLY ADDED POSITION (POS) STAT (%d)', len(POS_df))
 
 logging.info('TOTAL PLAYER SEASONS FROM DATA: %d', len(stats_df))
 
@@ -90,13 +93,22 @@ logging.info('TOTAL PLAYER SEASONS WITHOUT %s POSITIONS: %d', positions_to_remov
 stats_df = stats_df[stats_df['yearID'] >= first_allstar_year]
 logging.info('TOTAL PLAYER SEASONS %d OR LATER: %d', first_allstar_year, len(stats_df))
 
-# 4. number of awards (at the time of the season)
+# 4. league (AL/NL)
+def get_lgID(row):
+    player_appearances = appearances_df[(appearances_df['playerID'] == row['playerID']) & (appearances_df['yearID'] == row['yearID'])].copy()
+    player_appearances.sort_values(['G_all'], ascending=False, inplace=True)
+    return player_appearances['lgID'].iloc[0]
+
+stats_df['lgID'] = stats_df.apply(get_lgID, axis=1)
+logging.info('SUCCESSFULLY ADDED LEAGUE IDS (ALL)')
+
+# 5. number of awards (at the time of the season)
 stats_df['n_awards'] = 0
 for _, row in awards_df.iterrows():
     stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] > row['yearID']), ['n_awards']] += 1
 logging.info('SUCCESSFULLY ADDED AWARDS STATS (ALL)')
 
-# 5. all-star appearances
+# 6. all-star appearances
 stats_df['all_star?'] = 0
 for _, row in allstar_df.iterrows():
     stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] == row['yearID']), ['all_star?']] = 1
