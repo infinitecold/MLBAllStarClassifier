@@ -1,8 +1,8 @@
 # MLB All-Star Classifier
 
-> Current Version: v0.2.0 (07/13/18)
+> Current Version: v0.2.0 (07/15/18)
 
-A machine learning classification task that predicts the players of MLB's annual All-Star Game.
+A machine learning classification task that predicts the players of MLB's annual All-Star Game (position players only).
 
 The project currently implements a **random forest model**. I intend to train a neural network model in the near future.
 
@@ -41,7 +41,7 @@ To try the project out for yourself, follow: <br/>
 
 ## Results
 
-| Metric  | `train` (1933-2009) | `test` (2010-2017) |
+| Metric  | `train` (1933-2009 data) | `test` (2010-2017 data) |
 | :----: | :-----------------: | :----------------: |
 | Precision | [TBD in v1.0+] | [TBD in v1.0+] |
 | Recall | [TBD in v1.0+] | [TBD in v1.0+] |
@@ -51,4 +51,4 @@ To try the project out for yourself, follow: <br/>
 
 Credits to [Sean Lahman's Baseball Database](http://www.seanlahman.com/baseball-archive/statistics/) for the raw baseball data (files in data/raw/).
 
-Also credits to the [MLB](https://www.mlb.com/) for, well, existing, as otherwise this project would not have existed.
+Also credits to the [MLB](https://www.mlb.com/) for, well, existing, as otherwise this project would not have existed. I guess also for selecting this year's official All-Star Team.

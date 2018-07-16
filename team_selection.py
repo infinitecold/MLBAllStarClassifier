@@ -10,28 +10,8 @@ logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=loggi
 leagues = ['AL', 'NL']
 positions = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']
 
-# read in data and model from pickle
-with open('data/preproc/stats_cv.pickle', 'rb') as f:
-    [X_train, X_test, y_train, y_test] = pickle.load(f)
-
-with open('data/models/random_forest.pickle', 'rb') as f:
-    clf = pickle.load(f)
-
 # read in data from CSVs
 team_sizes_df = pd.read_csv('data/preproc/team_sizes.csv')
-
-# prepare identification columns for evaluation
-ID_train = X_train[['playerID', 'yearID', 'lgID', 'POS']].copy()
-X_train.drop(['playerID', 'yearID', 'lgID', 'POS'], axis=1, inplace=True)
-ID_test = X_test[['playerID', 'yearID', 'lgID', 'POS']].copy()
-X_test.drop(['playerID', 'yearID', 'lgID', 'POS'], axis=1, inplace=True)
-
-# modify features before predicting
-features_to_drop = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF',
-                    'GIDP', 'AVG', 'OBP', 'slugging', 'OPS', 'G_field', 'GS_field', 'InnOuts_field', 'PO_field',
-                    'A_field', 'E_field', 'DP_field', 'n_awards']
-X_train.drop(features_to_drop, axis=1, inplace=True)
-X_test.drop(features_to_drop, axis=1, inplace=True)
 
 # for each league of each year, select all-stars in league_year_stats and then update predictions in probabilities_df
 def model_predict(clf, X, ID):
@@ -60,16 +40,37 @@ def model_predict(clf, X, ID):
 
     return probabilities_df['prediction'].values.flatten()
 
-train_predictions = model_predict(clf, X_train, ID_train)
-train_precision = precision_score(y_train, train_predictions)
-train_recall = recall_score(y_train, train_predictions)
-train_f1 = f1_score(y_train, train_predictions)
+if __name__ == '__main__':
+    # read in data and model from pickle
+    with open('data/preproc/stats_cv.pickle', 'rb') as f:
+        [X_train, X_test, y_train, y_test] = pickle.load(f)
 
-test_predictions = model_predict(clf, X_test, ID_test)
-test_precision = precision_score(y_test, test_predictions)
-test_recall = recall_score(y_test, test_predictions)
-test_f1 = f1_score(y_test, test_predictions)
+    with open('data/models/random_forest.pickle', 'rb') as f:
+        clf = pickle.load(f)
 
-logging.info('PRECISION:\ttrain %.3f  test %.3f', train_precision, test_precision)
-logging.info('RECALL:\t\ttrain %.3f  test %.3f', train_recall, test_recall)
-logging.info('F1 SCORE:\ttrain %.3f  test %.3f', train_f1, test_f1)
+    # prepare identification columns for evaluation
+    ID_train = X_train[['playerID', 'yearID', 'lgID', 'POS']].copy()
+    X_train.drop(['playerID', 'yearID', 'lgID', 'POS'], axis=1, inplace=True)
+    ID_test = X_test[['playerID', 'yearID', 'lgID', 'POS']].copy()
+    X_test.drop(['playerID', 'yearID', 'lgID', 'POS'], axis=1, inplace=True)
+
+    # modify features before predicting
+    features_to_drop = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF',
+                        'GIDP', 'AVG', 'OBP', 'slugging', 'OPS', 'G_field', 'GS_field', 'InnOuts_field', 'PO_field',
+                        'A_field', 'E_field', 'DP_field', 'n_awards']
+    X_train.drop(features_to_drop, axis=1, inplace=True)
+    X_test.drop(features_to_drop, axis=1, inplace=True)
+
+    train_predictions = model_predict(clf, X_train, ID_train)
+    train_precision = precision_score(y_train, train_predictions)
+    train_recall = recall_score(y_train, train_predictions)
+    train_f1 = f1_score(y_train, train_predictions)
+
+    test_predictions = model_predict(clf, X_test, ID_test)
+    test_precision = precision_score(y_test, test_predictions)
+    test_recall = recall_score(y_test, test_predictions)
+    test_f1 = f1_score(y_test, test_predictions)
+
+    logging.info('PRECISION:\ttrain %.3f  test %.3f', train_precision, test_precision)
+    logging.info('RECALL:\t\ttrain %.3f  test %.3f', train_recall, test_recall)
+    logging.info('F1 SCORE:\ttrain %.3f  test %.3f', train_f1, test_f1)
