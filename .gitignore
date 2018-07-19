@@ -4,3 +4,5 @@ venv/
 data/preproc/
 data/models/
 *.pyc
+bbref/*.xml
+data/raw/*2018.csv
