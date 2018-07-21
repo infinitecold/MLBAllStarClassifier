@@ -1,4 +1,5 @@
 import logging
+import numpy as np
 import pandas as pd
 
 # package options
@@ -11,19 +12,11 @@ pd.set_option('display.width', 500)
 
 # parameters
 column_keys = ['playerID', 'yearID']
-batting_stats = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF', 'GIDP']
-fielding_stats = ['G', 'GS', 'InnOuts', 'PO', 'A', 'E', 'DP']
-
-position_columns = ['G_p', 'G_c', 'G_1b', 'G_2b', 'G_3b', 'G_ss', 'G_lf', 'G_cf', 'G_rf', 'G_dh']  # of Appearances.csv
 
 positions_to_remove = ['P']
 
-leagues = ['AL', 'NL']
-
 first_allstar_year = 1933
 current_year = 2018
-eras = {'1933-1941': (1933, 1941), '1942-1945': (1942, 1945), '1946-1962': (1946, 1962), '1963-1976': (1963, 1976),
-        '1977-1992': (1977, 1992), '1993-2009': (1993, 2009), '2010-': (2010, current_year)}
 
 games_threshold = 100  # number of games a player must play in order to be considered a top player
 top_players_threshold = 100  # number of top players to take average for each stat
@@ -41,31 +34,30 @@ all_stats_ordered = ['playerID', 'yearID', 'lgID', 'POS', 'G', 'G_diff', 'AB', '
                      'A_field_diff', 'E_field', 'E_field_diff', 'DP_field', 'DP_field_diff', 'n_awards',
                      'n_awards_diff', 'all_star?']
 
-# read in data from CSVs
-batting_df = pd.read_csv('data/raw/Batting.csv', usecols=column_keys + batting_stats)
-fielding_df = pd.read_csv('data/raw/Fielding.csv', usecols=column_keys + fielding_stats)
-appearances_df = pd.read_csv('data/raw/Appearances.csv')
-awards_df = pd.read_csv('data/raw/AwardsPlayers.csv', usecols=['playerID', 'awardID', 'yearID'])
-allstar_df = pd.read_csv('data/raw/AllstarFull.csv', usecols=['playerID', 'yearID'])
-logging.info('SUCCESSFULLY LOADED CSV(\'s) INTO DATAFRAME(\'s)')
-
 # PROCESSING STATS FROM DATA
 # 1. batting
+batting_stats = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF', 'GIDP']
+batting_df = pd.read_csv('data/raw/Batting.csv', usecols=column_keys + batting_stats)
+
 batting_df = batting_df.groupby(column_keys, as_index=False).sum()
 
 stats_df = batting_df
 logging.info('SUCCESSFULLY ADDED BATTING STATS (%d)', len(batting_df))
 
 # 2. fielding
+fielding_stats = ['G', 'GS', 'InnOuts', 'PO', 'A', 'E', 'DP']
+fielding_df = pd.read_csv('data/raw/Fielding.csv', usecols=column_keys + fielding_stats)
 fielding_df.columns = column_keys + [str(col) + '_field' for col in fielding_df.columns if str(col) in fielding_stats]
 fielding_df = fielding_df.groupby(column_keys, as_index=False).sum()
 
-stats_df = pd.merge(stats_df, fielding_df, how='outer', on=column_keys)
+stats_df = pd.merge(stats_df, fielding_df, how='left', on=column_keys)
 logging.info('SUCCESSFULLY ADDED FIELDING STATS (%d)', len(fielding_df))
 
-# 3. appearances - used to choose POS
+# 3. POS
+appearances_df = pd.read_csv('data/raw/Appearances.csv')
 POS_df = appearances_df.groupby(column_keys, as_index=False).sum()
 
+position_columns = ['G_p', 'G_c', 'G_1b', 'G_2b', 'G_3b', 'G_ss', 'G_lf', 'G_cf', 'G_rf', 'G_dh']
 def choose_position(row):
     row = pd.to_numeric(row, errors='coerce')
     best_position_label = row.reindex(position_columns).idxmax()  # e.g. G_3b
@@ -80,7 +72,7 @@ def choose_position(row):
 
 POS_df['POS'] = POS_df.apply(choose_position, axis=1)
 POS_df = POS_df[column_keys + ['POS']]
-stats_df = pd.merge(stats_df, POS_df, how='outer', on=column_keys)
+stats_df = pd.merge(stats_df, POS_df, how='left', on=column_keys)
 logging.info('SUCCESSFULLY ADDED POSITION (POS) STAT (%d)', len(POS_df))
 
 logging.info('TOTAL PLAYER SEASONS FROM DATA: %d', len(stats_df))
@@ -94,24 +86,37 @@ stats_df = stats_df[stats_df['yearID'] >= first_allstar_year]
 logging.info('TOTAL PLAYER SEASONS %d OR LATER: %d', first_allstar_year, len(stats_df))
 
 # 4. league (AL/NL)
-def get_lgID(row):
-    player_appearances = appearances_df[(appearances_df['playerID'] == row['playerID']) & (appearances_df['yearID'] == row['yearID'])].copy()
-    player_appearances.sort_values(['G_all'], ascending=False, inplace=True)
-    return player_appearances['lgID'].iloc[0]
-
-stats_df['lgID'] = stats_df.apply(get_lgID, axis=1)
+league_df = appearances_df.loc[appearances_df.groupby(['playerID', 'yearID'], as_index=False, sort=False)['G_all'].idxmax()]
+league_df = league_df[column_keys + ['lgID']]
+stats_df = pd.merge(stats_df, league_df, how='left', on=column_keys)
 logging.info('SUCCESSFULLY ADDED LEAGUE IDS (ALL)')
 
 # 5. number of awards (at the time of the season)
-stats_df['n_awards'] = 0
-for _, row in awards_df.iterrows():
-    stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] > row['yearID']), ['n_awards']] += 1
+awards_df = pd.read_csv('data/raw/AwardsPlayers.csv', usecols=['playerID', 'awardID', 'yearID'])
+awards_df['values'] = 1
+awards_sparse = awards_df.pivot_table(index='playerID',
+                                      columns='yearID',
+                                      values='values',
+                                      aggfunc='count',
+                                      fill_value=0)  # convert to sparse matrix
+matrix = np.triu(np.ones((awards_sparse.shape[1], awards_sparse.shape[1])))  # make new upper-triangular matrix of 1's
+np.fill_diagonal(matrix, 0)
+awards_sparse = np.matmul(awards_sparse.values, matrix)  # use matrix multiplication to accumulate values over the years
+awards_df = pd.DataFrame(awards_sparse,
+                         index=sorted(awards_df['playerID'].unique()),
+                         columns=sorted(awards_df['yearID'].unique()))  # convert back to dense matrix
+awards_df = pd.DataFrame(awards_df.stack()).reset_index()  # unstack dense matrix
+awards_df.rename({'level_0': 'playerID', 'level_1': 'yearID', 0: 'n_awards'}, axis=1, inplace=True)
+stats_df = pd.merge(stats_df, awards_df, how='left', on=column_keys)
+stats_df['n_awards'].fillna(0, inplace=True)
 logging.info('SUCCESSFULLY ADDED AWARDS STATS (ALL)')
 
 # 6. all-star appearances
-stats_df['all_star?'] = 0
-for _, row in allstar_df.iterrows():
-    stats_df.loc[(stats_df['playerID'] == row['playerID']) & (stats_df['yearID'] == row['yearID']), ['all_star?']] = 1
+allstar_df = pd.read_csv('data/raw/AllstarFull.csv', usecols=['playerID', 'yearID'])
+allstar_df.drop_duplicates(inplace=True)
+allstar_df['all_star?'] = 1
+stats_df = pd.merge(stats_df, allstar_df, how='left', on=column_keys)
+stats_df['all_star?'].fillna(0, inplace=True)
 logging.info('SUCCESSFULLY ADDED ALL-STAR STATS (%s)', len(allstar_df))
 
 # ADDING STATS USING EXISTING DATA
@@ -153,5 +158,5 @@ logging.info('SUCCESSFULLY ADDED DIFFERENTIAL STATS')
 stats_df = stats_df[all_stats_ordered]
 
 # save data to CSV
-stats_df.to_csv('data/preproc/stats.csv', index=False)
+stats_df.to_csv('data/preproc/stats.csv', index=False, float_format='%.3f')
 logging.info('SUCCESSFULLY WRITTEN DATAFRAME stats_df TO data/preproc/stats.csv')
