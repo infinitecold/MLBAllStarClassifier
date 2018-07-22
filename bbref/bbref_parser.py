@@ -3,7 +3,7 @@ import xml.etree.ElementTree as ET
 
 stat_type = 'Batting'
 input_file_path = '%s_raw_071718.xml' % stat_type
-output_file_path = '../data/raw/%s2018.csv' % stat_type
+output_file_path = '%s_raw.csv' % stat_type
 
 if stat_type == 'Batting':
     raw_columns = ['playerID', 'age', 'teamID', 'lgID', 'G', 'PA', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS',

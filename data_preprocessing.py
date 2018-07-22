@@ -15,9 +15,6 @@ column_keys = ['playerID', 'yearID']
 
 positions_to_remove = ['P']
 
-first_allstar_year = 1933
-current_year = 2018
-
 games_threshold = 100  # number of games a player must play in order to be considered a top player
 top_players_threshold = 100  # number of top players to take average for each stat
 pos_stats_to_diff = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'BB', 'IBB', 'HBP', 'SH', 'SF', 'AVG', 'OBP',
@@ -81,9 +78,9 @@ logging.info('TOTAL PLAYER SEASONS FROM DATA: %d', len(stats_df))
 stats_df = stats_df[~stats_df['POS'].isin(positions_to_remove)]
 logging.info('TOTAL PLAYER SEASONS WITHOUT %s POSITIONS: %d', positions_to_remove, len(stats_df))
 
-# drop players before all-star game was inaugurated
-stats_df = stats_df[stats_df['yearID'] >= first_allstar_year]
-logging.info('TOTAL PLAYER SEASONS %d OR LATER: %d', first_allstar_year, len(stats_df))
+# drop players before all-star game was inaugurated (1933)
+stats_df = stats_df[stats_df['yearID'] >= 1933]
+logging.info('TOTAL PLAYER SEASONS 1933 OR LATER: %d', len(stats_df))
 
 # 4. league (AL/NL)
 league_df = appearances_df.loc[appearances_df.groupby(['playerID', 'yearID'], as_index=False, sort=False)['G_all'].idxmax()]
@@ -117,7 +114,7 @@ allstar_df.drop_duplicates(inplace=True)
 allstar_df['all_star?'] = 1
 stats_df = pd.merge(stats_df, allstar_df, how='left', on=column_keys)
 stats_df['all_star?'].fillna(0, inplace=True)
-logging.info('SUCCESSFULLY ADDED ALL-STAR STATS (%s)', len(allstar_df))
+logging.info('SUCCESSFULLY ADDED ALL-STAR STATS (ALL: %s ALL-STARS)', len(allstar_df))
 
 # ADDING STATS USING EXISTING DATA
 # i. batting average
@@ -139,7 +136,8 @@ stats_df['OPS'] = stats_df['OBP'] + stats_df['slugging']
 
 # v. differential from average of top players (for each stat)
 diff_avgs = {}
-for year in range(first_allstar_year, current_year):  # set up dictionary of averages of all top players by year
+years = stats_df['yearID'].unique().tolist()
+for year in range(min(years), max(years) + 1):  # set up dictionary of averages of all top players by year
     diff_avgs[year] = {}
     considered = stats_df[(stats_df['yearID'] == year) & (stats_df['G'] >= games_threshold)]
     for stat in pos_stats_to_diff:

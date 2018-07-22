@@ -5,4 +5,5 @@ data/preproc/
 data/models/
 *.pyc
 bbref/*.xml
+bbref/*.csv
 data/raw/*2018.csv
