@@ -7,7 +7,6 @@ logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=loggi
 
 # read in data from CSV
 stats_df = pd.read_csv('data/preproc/stats.csv')
-logging.info('SUCCESSFULLY LOADED CSV(\'s) INTO DATAFRAME(\'s)')
 
 # cross-validation by year
 train_df = stats_df[stats_df['yearID'] < 2010].copy()
