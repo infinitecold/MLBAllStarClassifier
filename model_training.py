@@ -17,13 +17,6 @@ X_train.drop(['playerID', 'yearID', 'lgID', 'POS'], axis=1, inplace=True)
 ID_test = X_test[['playerID', 'yearID', 'lgID', 'POS']].copy()
 X_test.drop(['playerID', 'yearID', 'lgID', 'POS'], axis=1, inplace=True)
 
-# modify features before training
-features_to_drop = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF',
-                    'GIDP', 'AVG', 'OBP', 'slugging', 'OPS', 'G_field', 'GS_field', 'InnOuts_field', 'PO_field',
-                    'A_field', 'E_field', 'DP_field', 'n_awards']
-X_train.drop(features_to_drop, axis=1, inplace=True)
-X_test.drop(features_to_drop, axis=1, inplace=True)
-
 # train model
 clf = RandomForestClassifier(n_estimators=400, max_depth=100, max_features=0.1, min_samples_split=5, min_samples_leaf=2, random_state=1)
 clf.fit(X_train, y_train)

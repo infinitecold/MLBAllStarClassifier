@@ -4,7 +4,7 @@
 
 A machine learning classification task that predicts the players of MLB's annual All-Star Game (position players only).
 
-The project currently implements a **random forest model**. I intend to train a neural network model in the near future.
+The project currently implements a **random forest model**, with intentions to implement a neural network model in the near future.
 
 The project is written in Python, using the `pandas` and `numpy` packages for data analysis, the `matplotlib` package for data visualization, the `pickle` library for serialization, and the `sklearn` library for the machine learning models.
 
@@ -18,26 +18,26 @@ To collect a season's worth of data, such as for 2018, follow: <br/>
 
 | Position | AL Prediction | AL Actual | NL Prediction | NL Actual |
 | :------: | :-----------: | :-------: | :-----------: | :-------: |
-| C | **Wilson Ramos, Rays** | **Wilson Ramos, Rays** | Max Muncy, Dodgers | Willson Contreras, Cubs |
+| C | **Wilson Ramos, Rays** | **Wilson Ramos, Rays** | **Willson Contreras, Cubs** | **Willson Contreras, Cubs** |
 | 1B | Yuli Gurriel, Astros | Jose Abreu, White Sox | **Freddie Freeman, Braves** | **Freddie Freeman, Braves** |
 | 2B | **Jose Altuve, Astros** | **Jose Altuve, Astros** | **Javier Baez, Cubs** | **Javier Baez, Cubs** |
 | 3B | **Jose Ramirez, Indians** | **Jose Ramirez, Indians** | **Nolan Arenado, Rockies** | **Nolan Arenado, Rockies** |
-| SS | **Manny Machado, Orioles** | **Manny Machado, Orioles** | Trea Turner, Nationals | Brandon Crawford, Giants |
+| SS | **Manny Machado, Orioles** | **Manny Machado, Orioles** | Starlin Castro, Marlins | Brandon Crawford, Giants |
 | OF | **Mookie Betts, Red Sox** | **Mookie Betts, Red Sox** | **Nick Markakis, Braves** | **Nick Markakis, Braves** |
 | OF | **Mike Trout, Angels** | **Mike Trout, Angels** | **Matt Kemp, Dodgers** | **Matt Kemp, Dodgers** |
-| OF | **Aaron Judge, Yankees** | **Aaron Judge, Yankees** | José Martínez, Cardinals | Bryce Harper, Nationals |
-| Reserve | **J.D. Martinez, Red Sox** | **J.D. Martinez, Red Sox** | César Hernández, Phillies | Yadier Molina, Cardinals |
-| Reserve | Eddie Rosario, Twins | Salvador Perez, Royals | Matt Carpenter, Cardinals | Buster Posey, Giants |
-| Reserve | Nicholas Castellanos, Tigers | Mitch Moreland, Red Sox | **J.T. Realmuto, Marlins** | **J.T. Realmuto, Marlins** |
-| Reserve | Andrew Benintendi, Red Sox | Gleyber Torres, Yankees | **Paul Goldschmidt, D-backs** | **Paul Goldschmidt, D-backs** |
+| OF | **Aaron Judge, Yankees** | **Aaron Judge, Yankees** | **Bryce Harper, Nationals** | **Bryce Harper, Nationals** |
+| Reserve | **J.D. Martinez, Red Sox** | **J.D. Martinez, Red Sox** | Matt Carpenter, Cardinals | Yadier Molina, Cardinals |
+| Reserve | Eddie Rosario, Twins | Salvador Perez, Royals | Jose Martinez, Cardinals | Buster Posey, Giants |
+| Reserve | Andrew Benintendi, Red Sox | Mitch Moreland, Red Sox | **J.T. Realmuto, Marlins** | **J.T. Realmuto, Marlins** |
+| Reserve | Nicholas Castellanos, Tigers | Gleyber Torres, Yankees | **Paul Goldschmidt, D-backs** | **Paul Goldschmidt, D-backs** |
 | Reserve | Andrelton Simmons, Angels | Jed Lowrie, Athletics | **Joey Votto, Reds** | **Joey Votto, Reds** |
 | Reserve | **Alex Bregman, Astros** | **Alex Bregman, Astros** | **Ozzie Albies, Braves** | **Ozzie Albies, Braves** |
 | Reserve | **Francisco Lindor, Indians** | **Francisco Lindor, Indians** | **Scooter Gennett, Reds** | **Scooter Gennett, Reds** |
 | Reserve | **Michael Brantley, Indians** | **Michael Brantley, Indians** | **Eugenio Suarez, Reds** | **Eugenio Suarez, Reds** |
-| Reserve | Matt Duffy, Rays | Shin-Soo Choo, Rangers | **Trevor Story, Rockies** | **Trevor Story, Rockies** |
-| Reserve | Xander Bogaerts, Red Sox | Mitch Haniger, Mariners | Starlin Castro, Marlins | Charlie Blackmon, Rockies |
-| Reserve | Whit Merrifield, Royals | George Springer, Astros | **Lorenzo Cain, Brewers** | **Lorenzo Cain, Brewers** |
-| Reserve | **Nelson Cruz, Mariners** | **Nelson Cruz, Mariners** | José Peraza, Reds | Christian Yelich, Brewers |
+| Reserve | Whit Merrifield, Royals | Shin-Soo Choo, Rangers | **Trevor Story, Rockies** | **Trevor Story, Rockies** |
+| Reserve | Xander Bogaerts, Red Sox | Mitch Haniger, Mariners | **Charlie Blackmon, Rockies** | **Charlie Blackmon, Rockies** |
+| Reserve | Giancarlo Stanton, Yankees | George Springer, Astros | Brandon Belt, Giants | Lorenzo Cain, Brewers |
+| Reserve | **Nelson Cruz, Mariners** | **Nelson Cruz, Mariners** | Brian Anderson, Marlins | Christian Yelich, Brewers |
 | Reserve | **Jean Segura, Mariners** | **Jean Segura, Mariners** | **Jesus Aguilar, Brewers** | **Jesus Aguilar, Brewers** |
 
 (Note that the AL's DH position and each league's Final Votes are considered reserve players for convenience.)
@@ -46,7 +46,7 @@ To collect a season's worth of data, such as for 2018, follow: <br/>
 
 | Metric | `train` (1933-2009 data) | `test` (2010-2017 data) | `eval` (2018 data) |
 | :----: | :----------------------: | :---------------------: | :----------------: |
-| F1 score | 0.977975 | 0.594005 | 0.642857 |
+| F1 score | 0.983563 | 0.599455 | 0.690476 |
 
 ## Credits
 
