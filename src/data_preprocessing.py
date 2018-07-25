@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 
 # package options
-logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s  %(asctime)s\t%(message)s', level=logging.INFO)
 
 pd.set_option('display.column_space', 100)
 pd.set_option('display.max_columns', 100)
@@ -11,6 +11,9 @@ pd.set_option('display.max_rows', 1000)
 pd.set_option('display.width', 500)
 
 # parameters
+raw_data_directory = '../data/raw/'
+output_file_path = '../data/processed/stats.csv'
+
 column_keys = ['playerID', 'yearID']
 
 positions_to_remove = ['P']
@@ -34,7 +37,7 @@ all_stats_ordered = ['playerID', 'yearID', 'lgID', 'POS', 'G', 'G_diff', 'AB', '
 # PROCESSING STATS FROM DATA
 # 1. batting
 batting_stats = ['G', 'AB', 'R', 'H', '2B', '3B', 'HR', 'RBI', 'SB', 'CS', 'BB', 'SO', 'IBB', 'HBP', 'SH', 'SF', 'GIDP']
-batting_df = pd.read_csv('data/raw/Batting.csv', usecols=column_keys + batting_stats)
+batting_df = pd.read_csv(raw_data_directory + 'Batting.csv', usecols=column_keys + batting_stats)
 
 batting_df = batting_df.groupby(column_keys, as_index=False).sum()
 
@@ -43,7 +46,7 @@ logging.info('SUCCESSFULLY ADDED BATTING STATS (%d)', len(batting_df))
 
 # 2. fielding
 fielding_stats = ['G', 'GS', 'InnOuts', 'PO', 'A', 'E', 'DP']
-fielding_df = pd.read_csv('data/raw/Fielding.csv', usecols=column_keys + fielding_stats)
+fielding_df = pd.read_csv(raw_data_directory + 'Fielding.csv', usecols=column_keys + fielding_stats)
 fielding_df.columns = column_keys + [str(col) + '_field' for col in fielding_df.columns if str(col) in fielding_stats]
 fielding_df = fielding_df.groupby(column_keys, as_index=False).sum()
 
@@ -51,7 +54,7 @@ stats_df = pd.merge(stats_df, fielding_df, how='left', on=column_keys)
 logging.info('SUCCESSFULLY ADDED FIELDING STATS (%d)', len(fielding_df))
 
 # 3. POS
-appearances_df = pd.read_csv('data/raw/Appearances.csv')
+appearances_df = pd.read_csv(raw_data_directory + 'Appearances.csv')
 POS_df = appearances_df.groupby(column_keys, as_index=False).sum()
 
 position_columns = ['G_p', 'G_c', 'G_1b', 'G_2b', 'G_3b', 'G_ss', 'G_lf', 'G_cf', 'G_rf', 'G_dh']
@@ -89,7 +92,7 @@ stats_df = pd.merge(stats_df, league_df, how='left', on=column_keys)
 logging.info('SUCCESSFULLY ADDED LEAGUE IDS (ALL)')
 
 # 5. number of awards (at the time of the season)
-awards_df = pd.read_csv('data/raw/AwardsPlayers.csv', usecols=['playerID', 'awardID', 'yearID'])
+awards_df = pd.read_csv(raw_data_directory + 'AwardsPlayers.csv', usecols=['playerID', 'awardID', 'yearID'])
 awards_df['values'] = 1
 awards_sparse = awards_df.pivot_table(index='playerID',
                                       columns='yearID',
@@ -109,7 +112,7 @@ stats_df['n_awards'].fillna(0, inplace=True)
 logging.info('SUCCESSFULLY ADDED AWARDS STATS (ALL)')
 
 # 6. all-star appearances
-allstar_df = pd.read_csv('data/raw/AllstarFull.csv', usecols=['playerID', 'yearID'])
+allstar_df = pd.read_csv(raw_data_directory + 'AllstarFull.csv', usecols=['playerID', 'yearID'])
 allstar_df.drop_duplicates(inplace=True)
 allstar_df['all_star?'] = 1
 stats_df = pd.merge(stats_df, allstar_df, how='left', on=column_keys)
@@ -156,5 +159,5 @@ logging.info('SUCCESSFULLY ADDED DIFFERENTIAL STATS')
 stats_df = stats_df[all_stats_ordered]
 
 # save data to CSV
-stats_df.to_csv('data/preproc/stats.csv', index=False, float_format='%.3f')
-logging.info('SUCCESSFULLY WRITTEN DATAFRAME stats_df TO data/preproc/stats.csv')
+stats_df.to_csv(output_file_path, index=False, float_format='%.3f')
+logging.info('SUCCESSFULLY WRITTEN DATAFRAME TO %s', output_file_path)

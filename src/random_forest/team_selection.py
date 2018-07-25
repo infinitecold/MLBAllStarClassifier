@@ -2,14 +2,14 @@ import logging
 import pandas as pd
 
 # package options
-logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s  %(asctime)s\t%(message)s', level=logging.INFO)
 
 # parameters
 leagues = ['AL', 'NL']
 positions = ['C', '1B', '2B', '3B', 'SS', 'LF', 'CF', 'RF']
 
 # read in data from CSVs
-team_sizes_df = pd.read_csv('data/preproc/team_sizes.csv')
+team_sizes_df = pd.read_csv('../../data/processed/team_sizes.csv')
 
 # for each league of each year, select all-stars in league_year_stats and then update predictions in probabilities_df
 def model_predict(clf, X, ID):

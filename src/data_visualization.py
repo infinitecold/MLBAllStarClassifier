@@ -10,7 +10,7 @@ y_stat_name = 'Batting Average'
 games_threshold = 100
 
 # read in data from CSV
-stats_df = pd.read_csv('data/preproc/stats.csv')
+stats_df = pd.read_csv('../data/processed/stats.csv')
 
 pd.set_option('display.column_space', 100)
 pd.set_option('display.max_columns', 100)

@@ -5,10 +5,14 @@ from sklearn.metrics import f1_score, precision_score, recall_score
 from team_selection import model_predict
 
 # package options
-logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s  %(asctime)s\t%(message)s', level=logging.INFO)
+
+# parameters
+input_file_path = '../../data/processed/stats_cv.pickle'
+output_file_path = '../../models/random_forest.pickle'
 
 # read in data from pickle
-with open('data/preproc/stats_cv.pickle', 'rb') as f:
+with open(input_file_path, 'rb') as f:
     [X_train, X_test, y_train, y_test] = pickle.load(f)
 
 # prepare identification columns for evaluations
@@ -38,6 +42,6 @@ logging.info('RECALL:\t\ttrain %f  test %f', train_recall, test_recall)
 logging.info('F1 SCORE:\ttrain %f  test %f', train_f1, test_f1)
 
 # save model to pickle
-with open('data/models/random_forest.pickle', 'wb') as f:
+with open(output_file_path, 'wb') as f:
     pickle.dump(clf, f)
-logging.info('SUCCESSFULLY WRITTEN MODEL TO data/models/random_forest.pickle')
+logging.info('SUCCESSFULLY WRITTEN MODEL TO %s', output_file_path)

@@ -5,10 +5,10 @@ first_allstar_year = 1933
 current_year = 2018
 
 # read in data from CSVs
-stats_df = pd.read_csv('data/preproc/stats.csv')
-allstar_df = pd.read_csv('data/raw/AllstarFull.csv')
+stats_df = pd.read_csv('../data/processed/stats.csv')
+allstar_df = pd.read_csv('../data/raw/AllstarFull.csv')
 
-with open('data/preproc/team_sizes.csv', 'w') as output_file:
+with open('../data/processed/team_sizes.csv', 'w') as output_file:
     output_file.write('yearID,AL,NL\n')
     for year in range(first_allstar_year, current_year):
         AL = NL = 0

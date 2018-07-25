@@ -1,15 +1,9 @@
 import pandas as pd
 
-# package options
-pd.set_option('display.column_space', 100)
-pd.set_option('display.max_columns', 100)
-pd.set_option('display.max_rows', 1500)
-pd.set_option('display.width', 500)
-
-people_df = pd.read_csv('../data/raw/People.csv', usecols=['playerID', 'bbrefID'])
-batting_df = pd.read_csv('Batting_raw.csv')
-fielding_df = pd.read_csv('Fielding_raw.csv')
-appearances_df = pd.read_csv('Appearances_raw.csv')
+people_df = pd.read_csv('../../data/raw/People.csv', usecols=['playerID', 'bbrefID'])
+batting_df = pd.read_csv('../../data/bbref/Batting_raw.csv')
+fielding_df = pd.read_csv('../../data/bbref/Fielding_raw.csv')
+appearances_df = pd.read_csv('../../data/bbref/Appearances_raw.csv')
 
 # convert each playerID in context of bbref to playerID in context of our data
 def bbrefID_to_playerID(df):
@@ -44,6 +38,6 @@ appearances_df['lgID'].fillna('AL', inplace=True)  # fill remaining missing data
 cols = appearances_df.columns.tolist()
 appearances_df = appearances_df[cols[:2] + cols[-1:] + cols[2:-1]]
 
-batting_df.to_csv('../data/raw/Batting2018.csv', index=False)
-fielding_df.to_csv('../data/raw/Fielding2018.csv', index=False)
-appearances_df.to_csv('../data/raw/Appearances2018.csv', index=False)
+batting_df.to_csv('../../data/raw/Batting2018.csv', index=False)
+fielding_df.to_csv('../../data/raw/Fielding2018.csv', index=False)
+appearances_df.to_csv('../../data/raw/Appearances2018.csv', index=False)

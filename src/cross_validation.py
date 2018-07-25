@@ -3,10 +3,14 @@ import pandas as pd
 import pickle
 
 # package options
-logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s  %(asctime)s\t%(message)s', level=logging.INFO)
+
+# parameters
+input_file_path = '../data/processed/stats.csv'
+output_file_path = '../data/processed/stats_cv.pickle'
 
 # read in data from CSV
-stats_df = pd.read_csv('data/preproc/stats.csv')
+stats_df = pd.read_csv(input_file_path)
 
 # cross-validation by year
 train_df = stats_df[stats_df['yearID'] < 2010].copy()
@@ -31,6 +35,6 @@ y_train = train_df['all_star?']
 y_test = test_df['all_star?']
 
 # save data to pickle
-with open('data/preproc/stats_cv.pickle', 'wb') as f:
+with open(output_file_path, 'wb') as f:
     pickle.dump([X_train, X_test, y_train, y_test], f)
-logging.info('SUCCESSFULLY WRITTEN TRAINING AND TESTING SETS TO data/preproc/stats_cv.pickle')
+logging.info('SUCCESSFULLY WRITTEN TRAINING/TESTING SETS TO %s', output_file_path)

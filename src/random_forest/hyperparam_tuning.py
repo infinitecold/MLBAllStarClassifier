@@ -6,10 +6,10 @@ from sklearn.model_selection import ParameterGrid
 from team_selection import model_predict
 
 # package options
-logging.basicConfig(format='%(asctime)s %(levelname)s\t%(message)s', level=logging.INFO)
+logging.basicConfig(format='%(levelname)s  %(asctime)s\t%(message)s', level=logging.INFO)
 
 # read in data from pickle
-with open('data/preproc/stats_cv.pickle', 'rb') as f:
+with open('../../data/processed/stats_cv.pickle', 'rb') as f:
     [X_train, X_test, y_train, y_test] = pickle.load(f)
 
 # prepare identification columns for evaluation

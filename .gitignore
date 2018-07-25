@@ -1,9 +1,9 @@
 .idea/
 venv/
 .DS_Store
-data/preproc/
-data/models/
+data/processed/
+models/
 *.pyc
-bbref/*.xml
-bbref/*.csv
+data/bbref/
 data/*/*2018.csv
+*.log
