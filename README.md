@@ -1,10 +1,6 @@
 # MLB All-Star Classifier
 
-> Current Status: training new neural network model (07/24/18)
-
-A machine learning classification task that predicts the players of MLB's annual All-Star Game (position players only).
-
-The project currently implements a **random forest model**, with intentions to implement a neural network model in the near future.
+A machine learning classification task that predicts the players of MLB's annual All-Star Game (position players only). The project implements a **random forest model**.
 
 The project is written in Python, using the `pandas` and `numpy` packages for data analysis, the `matplotlib` package for data visualization, the `pickle` library for serialization, and the `sklearn` library for the machine learning models.
 
